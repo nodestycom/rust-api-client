@@ -1,0 +1,16 @@
+[package]
+name = "nodesty-api-library"
+version = "1.0.1"
+edition = "2024"
+description = "Rust API client for nodesty.com"
+homepage = "https://github.com/nodestycom/rust-api-client"
+repository = "https://github.com/nodestycom/rust-api-client"
+keywords = ["api", "client", "nodesty"]
+categories = ["web-programming", "api-bindings"]
+license = "MIT"
+
+[dependencies]
+reqwest = { version = "0.12.20", features = ["json"] }
+tokio = { version = "1.45.1", features = ["full"] }
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
