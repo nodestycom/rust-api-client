@@ -77,7 +77,7 @@ println ! ("Hata: {:?}", res.error);
 let vps_id = "your-vps-id";
 
 use nodesty_client::models::VpsAction;
-client.vps.perform_action(vps_id, VpsAction::Reboot).await?;
+client.vps.perform_action(vps_id, VpsAction::Restart).await?;
 
 let backups = client.vps.get_backups(vps_id).await?.data.unwrap();
 for backup in backups {

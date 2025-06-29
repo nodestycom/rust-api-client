@@ -11,6 +11,7 @@ use crate::models::{
 };
 use reqwest::Client;
 use std::collections::HashMap;
+use crate::VpsAction;
 
 pub struct FirewallApiService {
     client: Client,
@@ -42,7 +43,7 @@ impl FirewallApiService {
             .bearer_auth(self.access_token.clone())
             .send()
             .await?;
-
+        
         response.json::<ApiResponse<Vec<FirewallAttackLog>>>().await
     }
 
