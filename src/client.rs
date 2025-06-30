@@ -13,7 +13,7 @@ use crate::services::{
 use crate::models::RestClientOptions;
 
 pub struct NodestyApiClient {
-    
+
     #[allow(dead_code)]
     reqwest_client: Client,
     base_url: String,
