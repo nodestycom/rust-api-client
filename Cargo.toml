@@ -1,6 +1,6 @@
 [package]
 name = "nodesty-api-library"
-version = "1.0.2"
+version = "1.0.3"
 edition = "2024"
 description = "Rust API client for nodesty.com"
 homepage = "https://github.com/nodestycom/rust-api-client"

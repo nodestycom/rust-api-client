@@ -17,15 +17,13 @@ use std::collections::HashMap;
 pub struct VpsApiService {
     client: Client,
     base_url: String,
-    access_token: String,
 }
 
 impl VpsApiService {
-    pub fn new(client: Client, base_url: String, access_token: String) -> Self {
+    pub fn new(client: Client, base_url: String) -> Self {
         Self {
             client,
             base_url,
-            access_token,
         }
     }
 
@@ -41,7 +39,6 @@ impl VpsApiService {
         let response = self
             .client
             .post(&url)
-            .bearer_auth(self.access_token.clone())
             .json(&body)
             .send()
             .await?;
@@ -53,19 +50,17 @@ impl VpsApiService {
         id: &str,
         data: &VpsBackup,
     ) -> Result<ApiResponse<()>, reqwest::Error> {
-        let url = format!(
-            "{}/services/{}/vps/backups/{}/{}",
-            self.base_url, id, data.date, data.file
-        );
+        let url = format!("{}/services/{}/vps/backup/restore", self.base_url, id);
         let response = self
             .client
             .post(&url)
-            .bearer_auth(self.access_token.clone())
+            .json(&data)
             .send()
             .await?;
 
         response.json::<ApiResponse<()>>().await
     }
+
     pub async fn get_backups(
         &self,
         id: &str,
@@ -74,11 +69,63 @@ impl VpsApiService {
         let response = self
             .client
             .get(&url)
-            .bearer_auth(self.access_token.clone())
             .send()
             .await?;
 
         response.json::<ApiResponse<Vec<VpsBackup>>>().await
+    }
+
+    pub async fn get_bandwidth_graphs(
+        &self,
+        id: &str,
+    ) -> Result<ApiResponse<VpsGraphs>, reqwest::Error> {
+        let url = format!("{}/services/{}/vps/graphs/bandwidth", self.base_url, id);
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .await?;
+
+        response.json::<ApiResponse<VpsGraphs>>().await
+    }
+
+    pub async fn get_cpu_graphs(
+        &self,
+        id: &str,
+    ) -> Result<ApiResponse<VpsGraphs>, reqwest::Error> {
+        let url = format!("{}/services/{}/vps/graphs/cpu", self.base_url, id);
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .await?;
+
+        response.json::<ApiResponse<VpsGraphs>>().await
+    }
+
+    pub async fn get_io_graphs(&self, id: &str) -> Result<ApiResponse<VpsGraphs>, reqwest::Error> {
+        let url = format!("{}/services/{}/vps/graphs/io", self.base_url, id);
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .await?;
+
+        response.json::<ApiResponse<VpsGraphs>>().await
+    }
+
+    pub async fn get_ram_graphs(
+        &self,
+        id: &str,
+    ) -> Result<ApiResponse<VpsGraphs>, reqwest::Error> {
+        let url = format!("{}/services/{}/vps/graphs/ram", self.base_url, id);
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .await?;
+
+        response.json::<ApiResponse<VpsGraphs>>().await
     }
 
     pub async fn change_password(
@@ -90,7 +137,6 @@ impl VpsApiService {
         let response = self
             .client
             .post(&url)
-            .bearer_auth(self.access_token.clone())
             .json(&data)
             .send()
             .await?;
@@ -98,23 +144,11 @@ impl VpsApiService {
         response.json::<ApiResponse<()>>().await
     }
 
-    pub async fn get_graphs(&self, id: &str) -> Result<ApiResponse<VpsGraphs>, reqwest::Error> {
-        let url = format!("{}/services/{}/vps/graphs", self.base_url, id);
-        let response = self
-            .client
-            .get(&url)
-            .bearer_auth(self.access_token.clone())
-            .send()
-            .await?;
-
-        response.json::<ApiResponse<VpsGraphs>>().await
-    }
     pub async fn get_details(&self, id: &str) -> Result<ApiResponse<VpsDetails>, reqwest::Error> {
-        let url = format!("{}/services/{}/vps/info", self.base_url, id);
+        let url = format!("{}/services/{}/vps/details", self.base_url, id);
         let response = self
             .client
             .get(&url)
-            .bearer_auth(self.access_token.clone())
             .send()
             .await?;
 
@@ -129,7 +163,6 @@ impl VpsApiService {
         let response = self
             .client
             .get(&url)
-            .bearer_auth(self.access_token.clone())
             .send()
             .await?;
 
@@ -145,7 +178,6 @@ impl VpsApiService {
         let response = self
             .client
             .post(&url)
-            .bearer_auth(self.access_token.clone())
             .json(&data)
             .send()
             .await?;
@@ -158,7 +190,6 @@ impl VpsApiService {
         let response = self
             .client
             .get(&url)
-            .bearer_auth(self.access_token.clone())
             .send()
             .await?;
 

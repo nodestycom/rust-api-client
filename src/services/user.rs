@@ -15,15 +15,13 @@ use reqwest::Client;
 pub struct UserApiService {
     client: Client,
     base_url: String,
-    access_token: String,
 }
 
 impl UserApiService {
-    pub fn new(client: Client, base_url: String, access_token: String) -> Self {
+    pub fn new(client: Client, base_url: String) -> Self {
         Self {
             client,
             base_url,
-            access_token,
         }
     }
 
@@ -32,7 +30,6 @@ impl UserApiService {
         let response = self
             .client
             .get(&url)
-            .bearer_auth(self.access_token.clone())
             .send()
             .await?;
 
@@ -47,7 +44,6 @@ impl UserApiService {
         let response = self
             .client
             .get(&url)
-            .bearer_auth(self.access_token.clone())
             .send()
             .await?;
 
@@ -59,7 +55,6 @@ impl UserApiService {
         let response = self
             .client
             .get(&url)
-            .bearer_auth(self.access_token.clone())
             .send()
             .await?;
 
@@ -71,7 +66,6 @@ impl UserApiService {
         let response = self
             .client
             .get(&url)
-            .bearer_auth(self.access_token.clone())
             .send()
             .await?;
 
@@ -86,7 +80,6 @@ impl UserApiService {
         let response = self
             .client
             .get(&url)
-            .bearer_auth(self.access_token.clone())
             .send()
             .await?;
 
@@ -100,7 +93,6 @@ impl UserApiService {
         let response = self
             .client
             .get(&url)
-            .bearer_auth(self.access_token.clone())
             .send()
             .await?;
 
@@ -114,7 +106,6 @@ impl UserApiService {
         let response = self
             .client
             .get(&url)
-            .bearer_auth(self.access_token.clone())
             .send()
             .await?;
 

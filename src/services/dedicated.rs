@@ -11,18 +11,17 @@ use crate::models::{
 };
 use reqwest::Client;
 use std::collections::HashMap;
+
 pub struct DedicatedServerApiService {
     client: Client,
     base_url: String,
-    access_token: String,
 }
 
 impl DedicatedServerApiService {
-    pub fn new(client: Client, base_url: String, access_token: String) -> Self {
+    pub fn new(client: Client, base_url: String) -> Self {
         Self {
             client,
             base_url,
-            access_token,
         }
     }
 
@@ -39,7 +38,6 @@ impl DedicatedServerApiService {
         let response = self
             .client
             .post(&url)
-            .bearer_auth(self.access_token.clone())
             .json(&body)
             .send()
             .await?;
@@ -54,7 +52,6 @@ impl DedicatedServerApiService {
         let response = self
             .client
             .get(&url)
-            .bearer_auth(self.access_token.clone())
             .send()
             .await?;
 
@@ -71,13 +68,10 @@ impl DedicatedServerApiService {
         let response = self
             .client
             .get(&url)
-            .bearer_auth(self.access_token.clone())
             .send()
             .await?;
 
-        response
-            .json::<ApiResponse<Vec<DedicatedServerOsTemplate>>>()
-            .await
+        response.json::<ApiResponse<Vec<DedicatedServerOsTemplate>>>().await
     }
 
     pub async fn get_reinstall_status(
@@ -91,7 +85,6 @@ impl DedicatedServerApiService {
         let response = self
             .client
             .get(&url)
-            .bearer_auth(self.access_token.clone())
             .send()
             .await?;
 
@@ -109,7 +102,6 @@ impl DedicatedServerApiService {
         let response = self
             .client
             .post(&url)
-            .bearer_auth(self.access_token.clone())
             .json(&data)
             .send()
             .await?;
@@ -125,7 +117,6 @@ impl DedicatedServerApiService {
         let response = self
             .client
             .get(&url)
-            .bearer_auth(self.access_token.clone())
             .send()
             .await?;
 

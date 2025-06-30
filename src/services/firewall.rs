@@ -11,20 +11,17 @@ use crate::models::{
 };
 use reqwest::Client;
 use std::collections::HashMap;
-use crate::VpsAction;
 
 pub struct FirewallApiService {
     client: Client,
     base_url: String,
-    access_token: String,
 }
 
 impl FirewallApiService {
-    pub fn new(client: Client, base_url: String, access_token: String) -> Self {
+    pub fn new(client: Client, base_url: String) -> Self {
         Self {
             client,
             base_url,
-            access_token,
         }
     }
 
@@ -40,10 +37,9 @@ impl FirewallApiService {
         let response = self
             .client
             .get(&url)
-            .bearer_auth(self.access_token.clone())
             .send()
             .await?;
-        
+
         response.json::<ApiResponse<Vec<FirewallAttackLog>>>().await
     }
 
@@ -59,7 +55,6 @@ impl FirewallApiService {
         let response = self
             .client
             .get(&url)
-            .bearer_auth(self.access_token.clone())
             .send()
             .await?;
 
@@ -68,31 +63,20 @@ impl FirewallApiService {
             .await
     }
 
-    pub async fn update_attack_notification_settings(
+    pub async fn set_attack_notification_settings(
         &self,
         service_id: &str,
         ip: &str,
-        settings: AttackNotificationSettings,
+        data: AttackNotificationSettings,
     ) -> Result<ApiResponse<()>, reqwest::Error> {
         let url = format!(
             "{}/services/{}/firewall/{}/attack-notification",
             self.base_url, service_id, ip
         );
-
-        let mut body = HashMap::new();
-        body.insert(
-            "emailNotification",
-            serde_json::to_value(settings.email_notification).unwrap(),
-        );
-        if let Some(url_str) = settings.discord_webhook_url {
-            body.insert("discordWebhookURL", serde_json::to_value(url_str).unwrap());
-        }
-
         let response = self
             .client
             .post(&url)
-            .bearer_auth(self.access_token.clone())
-            .json(&body)
+            .json(&data)
             .send()
             .await?;
 
@@ -105,58 +89,32 @@ impl FirewallApiService {
         ip: &str,
     ) -> Result<ApiResponse<FirewallReverseDns>, reqwest::Error> {
         let url = format!(
-            "{}/services/{}/firewall/{}/reverse-dns",
+            "{}/services/{}/firewall/{}/rdns",
             self.base_url, service_id, ip
         );
         let response = self
             .client
             .get(&url)
-            .bearer_auth(self.access_token.clone())
             .send()
             .await?;
 
         response.json::<ApiResponse<FirewallReverseDns>>().await
     }
 
-    pub async fn update_reverse_dns(
+    pub async fn set_reverse_dns(
         &self,
         service_id: &str,
         ip: &str,
         data: FirewallReverseDns,
     ) -> Result<ApiResponse<()>, reqwest::Error> {
         let url = format!(
-            "{}/services/{}/firewall/{}/reverse-dns",
+            "{}/services/{}/firewall/{}/rdns",
             self.base_url, service_id, ip
         );
-
-        let mut body = HashMap::new();
-        body.insert("rdns", data.rdns);
-
         let response = self
             .client
             .post(&url)
-            .bearer_auth(self.access_token.clone())
-            .json(&body)
-            .send()
-            .await?;
-
-        response.json::<ApiResponse<()>>().await
-    }
-
-    pub async fn delete_rule(
-        &self,
-        service_id: &str,
-        ip: &str,
-        rule_id: u32,
-    ) -> Result<ApiResponse<()>, reqwest::Error> {
-        let url = format!(
-            "{}/services/{}/firewall/{}/rules/{}",
-            self.base_url, service_id, ip, rule_id
-        );
-        let response = self
-            .client
-            .delete(&url)
-            .bearer_auth(self.access_token.clone())
+            .json(&data)
             .send()
             .await?;
 
@@ -175,7 +133,6 @@ impl FirewallApiService {
         let response = self
             .client
             .get(&url)
-            .bearer_auth(self.access_token.clone())
             .send()
             .await?;
 
@@ -195,7 +152,6 @@ impl FirewallApiService {
         let response = self
             .client
             .post(&url)
-            .bearer_auth(self.access_token.clone())
             .json(&data)
             .send()
             .await?;
@@ -215,12 +171,9 @@ impl FirewallApiService {
         let response = self
             .client
             .get(&url)
-            .bearer_auth(self.access_token.clone())
             .send()
             .await?;
 
-        response
-            .json::<ApiResponse<Vec<FirewallStatistics>>>()
-            .await
+        response.json::<ApiResponse<Vec<FirewallStatistics>>>().await
     }
 }
