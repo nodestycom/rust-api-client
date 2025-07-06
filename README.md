@@ -1,6 +1,6 @@
 # Nodesty Rust API Client
 
-[![API](https://img.shields.io/badge/nodesty-api-library-purple.svg)](https://nodesty.com)  
+[![API](https://img.shields.io/badge/Nodesty-API-purple.svg)](https://nodesty.com)  
 [![Author](https://img.shields.io/badge/Author-Staticius-blue.svg)](https://github.com/staticius)
 
 **nodesty.com**'un güçlü API'sine Rust uygulamalarınızdan kolayca erişmenizi sağlayan modern, asenkron ve tip güvenli bir istemci kütüphanesi.
