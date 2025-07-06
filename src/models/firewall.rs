@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct AttackNotificationSettings {
     pub email_notification: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub discord_webhook_url: Option<String>,
 }
 
@@ -19,7 +20,8 @@ pub struct FirewallAttackLog {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FirewallReverseDns {
-    pub rdns: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rdns: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

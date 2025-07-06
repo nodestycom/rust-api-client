@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+
 pub struct Service {
     pub id: u32,
     pub product_id: u32,
@@ -115,13 +116,15 @@ pub struct User {
     pub currency: String,
     pub currency_symbol: String,
     pub phone_number: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub tckn: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub company_name: Option<String>,
     pub birth_year: Option<String>,
     pub banned: bool,
     pub current_session_id: String,
     pub totp_enabled: bool,
     pub stats: UserStats,
-    pub company_name: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
@@ -150,6 +153,7 @@ pub struct InvoiceItem {
 pub struct Invoice {
     pub id: u32,
     pub due_date: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub date_paid: Option<u64>,
     pub sub_total: f64,
     pub total: f64,

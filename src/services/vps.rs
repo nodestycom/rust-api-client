@@ -11,19 +11,18 @@ use crate::models::{
     },
     ApiResponse,
 };
-use reqwest::Client;
-use std::collections::HashMap;
+use crate::NodestyApiClient;
+use reqwest::Method;
+use std::sync::Arc;
 
 pub struct VpsApiService {
-    client: Client,
-    base_url: String,
+    client: Arc<NodestyApiClient>,
 }
 
 impl VpsApiService {
-    pub fn new(client: Client, base_url: String) -> Self {
+    pub fn new(client: Arc<NodestyApiClient>) -> Self {
         Self {
             client,
-            base_url,
         }
     }
 
@@ -32,100 +31,23 @@ impl VpsApiService {
         id: &str,
         action: VpsAction,
     ) -> Result<ApiResponse<()>, reqwest::Error> {
-        let url = format!("{}/services/{}/vps/action", self.base_url, id);
-        let mut body = HashMap::new();
-        body.insert("action", action);
-
-        let response = self
-            .client
-            .post(&url)
-            .json(&body)
-            .send()
-            .await?;
-
-        response.json::<ApiResponse<()>>().await
+        let body = serde_json::json!({ "action": action });
+        self.client.send_request(Method::POST, &format!("/services/{}/vps/action", id), Some(body)).await
     }
+
     pub async fn restore_backup(
         &self,
         id: &str,
         data: &VpsBackup,
     ) -> Result<ApiResponse<()>, reqwest::Error> {
-        let url = format!("{}/services/{}/vps/backup/restore", self.base_url, id);
-        let response = self
-            .client
-            .post(&url)
-            .json(&data)
-            .send()
-            .await?;
-
-        response.json::<ApiResponse<()>>().await
+        self.client.send_request(Method::POST, &format!("/services/{}/vps/backups/{}/{}", id, data.date, data.file), None).await
     }
 
     pub async fn get_backups(
         &self,
         id: &str,
     ) -> Result<ApiResponse<Vec<VpsBackup>>, reqwest::Error> {
-        let url = format!("{}/services/{}/vps/backups", self.base_url, id);
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .await?;
-
-        response.json::<ApiResponse<Vec<VpsBackup>>>().await
-    }
-
-    pub async fn get_bandwidth_graphs(
-        &self,
-        id: &str,
-    ) -> Result<ApiResponse<VpsGraphs>, reqwest::Error> {
-        let url = format!("{}/services/{}/vps/graphs/bandwidth", self.base_url, id);
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .await?;
-
-        response.json::<ApiResponse<VpsGraphs>>().await
-    }
-
-    pub async fn get_cpu_graphs(
-        &self,
-        id: &str,
-    ) -> Result<ApiResponse<VpsGraphs>, reqwest::Error> {
-        let url = format!("{}/services/{}/vps/graphs/cpu", self.base_url, id);
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .await?;
-
-        response.json::<ApiResponse<VpsGraphs>>().await
-    }
-
-    pub async fn get_io_graphs(&self, id: &str) -> Result<ApiResponse<VpsGraphs>, reqwest::Error> {
-        let url = format!("{}/services/{}/vps/graphs/io", self.base_url, id);
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .await?;
-
-        response.json::<ApiResponse<VpsGraphs>>().await
-    }
-
-    pub async fn get_ram_graphs(
-        &self,
-        id: &str,
-    ) -> Result<ApiResponse<VpsGraphs>, reqwest::Error> {
-        let url = format!("{}/services/{}/vps/graphs/ram", self.base_url, id);
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .await?;
-
-        response.json::<ApiResponse<VpsGraphs>>().await
+        self.client.send_request(Method::GET, &format!("/services/{}/vps/backups", id), None).await
     }
 
     pub async fn change_password(
@@ -133,40 +55,29 @@ impl VpsApiService {
         id: &str,
         data: VpsChangePasswordData,
     ) -> Result<ApiResponse<()>, reqwest::Error> {
-        let url = format!("{}/services/{}/vps/change-password", self.base_url, id);
-        let response = self
-            .client
-            .post(&url)
-            .json(&data)
-            .send()
-            .await?;
-
-        response.json::<ApiResponse<()>>().await
+        let body = serde_json::to_value(&data).ok();
+        self.client.send_request(Method::POST, &format!("/services/{}/vps/change-password", id), body).await
     }
 
-    pub async fn get_details(&self, id: &str) -> Result<ApiResponse<VpsDetails>, reqwest::Error> {
-        let url = format!("{}/services/{}/vps/details", self.base_url, id);
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .await?;
+    pub async fn get_usage_statistics(
+        &self,
+        id: &str,
+    ) -> Result<ApiResponse<VpsGraphs>, reqwest::Error> {
+        self.client.send_request(Method::GET, &format!("/services/{}/vps/graphs", id), None).await
+    }
 
-        response.json::<ApiResponse<VpsDetails>>().await
+    pub async fn get_details(
+        &self,
+        id: &str,
+    ) -> Result<ApiResponse<VpsDetails>, reqwest::Error> {
+        self.client.send_request(Method::GET, &format!("/services/{}/vps/info", id), None).await
     }
 
     pub async fn get_os_templates(
         &self,
         id: &str,
     ) -> Result<ApiResponse<Vec<VpsOsTemplate>>, reqwest::Error> {
-        let url = format!("{}/services/{}/vps/os-templates", self.base_url, id);
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .await?;
-
-        response.json::<ApiResponse<Vec<VpsOsTemplate>>>().await
+        self.client.send_request(Method::GET, &format!("/services/{}/vps/os-templates", id), None).await
     }
 
     pub async fn reinstall(
@@ -174,25 +85,14 @@ impl VpsApiService {
         id: &str,
         data: VpsReinstallData,
     ) -> Result<ApiResponse<()>, reqwest::Error> {
-        let url = format!("{}/services/{}/vps/reinstall", self.base_url, id);
-        let response = self
-            .client
-            .post(&url)
-            .json(&data)
-            .send()
-            .await?;
-
-        response.json::<ApiResponse<()>>().await
+        let body = serde_json::to_value(&data).ok();
+        self.client.send_request(Method::POST, &format!("/services/{}/vps/reinstall", id), body).await
     }
 
-    pub async fn get_tasks(&self, id: &str) -> Result<ApiResponse<Vec<VpsTask>>, reqwest::Error> {
-        let url = format!("{}/services/{}/vps/tasks", self.base_url, id);
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .await?;
-
-        response.json::<ApiResponse<Vec<VpsTask>>>().await
+    pub async fn get_tasks(
+        &self,
+        id: &str,
+    ) -> Result<ApiResponse<Vec<VpsTask>>, reqwest::Error> {
+        self.client.send_request(Method::GET, &format!("/services/{}/vps/tasks", id), None).await
     }
 }

@@ -3,9 +3,16 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ApiResponse<T> {
+    #[serde(default = "default_success")]
     pub success: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub data: Option<T>,
+}
+
+fn default_success() -> bool {
+    true
 }
 
 #[derive(Debug, Clone)]

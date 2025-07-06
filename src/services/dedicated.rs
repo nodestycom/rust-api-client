@@ -1,6 +1,7 @@
 use crate::models::{
     dedicated::{
         DedicatedServerAction,
+        DedicatedServerDetails,
         DedicatedServerHardwareComponent,
         DedicatedServerOsTemplate,
         DedicatedServerReinstallData,
@@ -9,19 +10,18 @@ use crate::models::{
     },
     ApiResponse,
 };
-use reqwest::Client;
-use std::collections::HashMap;
+use crate::NodestyApiClient;
+use reqwest::{Error, Method};
+use std::sync::Arc;
 
 pub struct DedicatedServerApiService {
-    client: Client,
-    base_url: String,
+    client: Arc<NodestyApiClient>,
 }
 
 impl DedicatedServerApiService {
-    pub fn new(client: Client, base_url: String) -> Self {
+    pub fn new(client: Arc<NodestyApiClient>) -> Self {
         Self {
             client,
-            base_url,
         }
     }
 
@@ -29,99 +29,52 @@ impl DedicatedServerApiService {
         &self,
         id: &str,
         action: DedicatedServerAction,
-    ) -> Result<ApiResponse<()>, reqwest::Error> {
-        let url = format!("{}/services/{}/dedicated/action", self.base_url, id);
-
-        let mut body = HashMap::new();
-        body.insert("action", serde_json::to_value(action).unwrap());
-
-        let response = self
-            .client
-            .post(&url)
-            .json(&body)
-            .send()
-            .await?;
-
-        response.json::<ApiResponse<()>>().await
+    ) -> Result<ApiResponse<()>, Error> {
+        let body = serde_json::json!({ "action": action });
+        self.client.send_request(Method::POST, &format!("/services/{}/dedicated/action", id), Some(body)).await
     }
+
+    pub async fn get_details(
+        &self,
+        id: &str,
+    ) -> Result<ApiResponse<DedicatedServerDetails>, Error> {
+        self.client.send_request(Method::GET, &format!("/services/{}/dedicated/info", id), None).await
+    }
+
     pub async fn get_hardware_components(
         &self,
         id: &str,
-    ) -> Result<ApiResponse<Vec<DedicatedServerHardwareComponent>>, reqwest::Error> {
-        let url = format!("{}/services/{}/dedicated/hardware", self.base_url, id);
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .await?;
-
-        response
-            .json::<ApiResponse<Vec<DedicatedServerHardwareComponent>>>()
-            .await
+    ) -> Result<ApiResponse<Vec<DedicatedServerHardwareComponent>>, Error> {
+        self.client.send_request(Method::GET, &format!("/services/{}/dedicated/hardware", id), None).await
     }
 
     pub async fn get_os_templates(
         &self,
         id: &str,
-    ) -> Result<ApiResponse<Vec<DedicatedServerOsTemplate>>, reqwest::Error> {
-        let url = format!("{}/services/{}/dedicated/os-templates", self.base_url, id);
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .await?;
-
-        response.json::<ApiResponse<Vec<DedicatedServerOsTemplate>>>().await
+    ) -> Result<ApiResponse<Vec<DedicatedServerOsTemplate>>, Error> {
+        self.client.send_request(Method::GET, &format!("/services/{}/dedicated/os-templates", id), None).await
     }
 
     pub async fn get_reinstall_status(
         &self,
         id: &str,
-    ) -> Result<ApiResponse<DedicatedServerReinstallStatus>, reqwest::Error> {
-        let url = format!(
-            "{}/services/{}/dedicated/reinstall-status",
-            self.base_url, id
-        );
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .await?;
-
-        response
-            .json::<ApiResponse<DedicatedServerReinstallStatus>>()
-            .await
+    ) -> Result<ApiResponse<DedicatedServerReinstallStatus>, Error> {
+        self.client.send_request(Method::GET, &format!("/services/{}/dedicated/reinstall-status", id), None).await
     }
 
     pub async fn reinstall(
         &self,
         id: &str,
         data: DedicatedServerReinstallData,
-    ) -> Result<ApiResponse<()>, reqwest::Error> {
-        let url = format!("{}/services/{}/dedicated/reinstall", self.base_url, id);
-        let response = self
-            .client
-            .post(&url)
-            .json(&data)
-            .send()
-            .await?;
-
-        response.json::<ApiResponse<()>>().await
+    ) -> Result<ApiResponse<()>, Error> {
+        let body = serde_json::to_value(&data).ok();
+        self.client.send_request(Method::POST, &format!("/services/{}/dedicated/reinstall", id), body).await
     }
 
     pub async fn get_tasks(
         &self,
         id: &str,
-    ) -> Result<ApiResponse<Vec<DedicatedServerTask>>, reqwest::Error> {
-        let url = format!("{}/services/{}/dedicated/tasks", self.base_url, id);
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .await?;
-
-        response
-            .json::<ApiResponse<Vec<DedicatedServerTask>>>()
-            .await
+    ) -> Result<ApiResponse<Vec<DedicatedServerTask>>, Error> {
+        self.client.send_request(Method::GET, &format!("/services/{}/dedicated/tasks", id), None).await
     }
 }

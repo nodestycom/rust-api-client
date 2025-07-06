@@ -1,3 +1,6 @@
+use reqwest::{Error, Method};
+use std::sync::Arc;
+
 use crate::models::{
     user::{
         Invoice,
@@ -6,109 +9,54 @@ use crate::models::{
         Ticket,
         User,
         UserInvoiceSummary,
-        UserTicketSummary
+        UserTicketSummary,
     },
     ApiResponse,
 };
-use reqwest::Client;
+
+use crate::NodestyApiClient;
 
 pub struct UserApiService {
-    client: Client,
-    base_url: String,
+    client: Arc<NodestyApiClient>,
 }
 
 impl UserApiService {
-    pub fn new(client: Client, base_url: String) -> Self {
+    pub fn new(client: Arc<NodestyApiClient>) -> Self {
         Self {
-            client,
-            base_url,
+            client
         }
     }
-
-    pub async fn get_services(&self) -> Result<ApiResponse<Vec<Service>>, reqwest::Error> {
-        let url = format!("{}/services", self.base_url);
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .await?;
-
-        response.json::<ApiResponse<Vec<Service>>>().await
+    pub async fn get_services(&self) -> Result<ApiResponse<Vec<Service>>, Error> {
+        self.client.send_request(Method::GET, "/services", None).await
     }
 
     pub async fn get_ticket_by_id(
         &self,
         ticket_id: &str,
-    ) -> Result<ApiResponse<Ticket>, reqwest::Error> {
-        let url = format!("{}/tickets/{}", self.base_url, ticket_id);
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .await?;
-
-        response.json::<ApiResponse<Ticket>>().await
+    ) -> Result<ApiResponse<Ticket>, Error> {
+        self.client.send_request(Method::GET, &format!("/tickets/{}", ticket_id), None).await
     }
 
-    pub async fn get_tickets(&self) -> Result<ApiResponse<Vec<UserTicketSummary>>, reqwest::Error> {
-        let url = format!("{}/tickets", self.base_url);
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .await?;
-
-        response.json::<ApiResponse<Vec<UserTicketSummary>>>().await
+    pub async fn get_tickets(&self) -> Result<ApiResponse<Vec<UserTicketSummary>>, Error> {
+        self.client.send_request(Method::GET, "/tickets", None).await
     }
 
-    pub async fn get_current_user(&self) -> Result<ApiResponse<User>, reqwest::Error> {
-        let url = format!("{}/users/@me", self.base_url);
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .await?;
-
-        response.json::<ApiResponse<User>>().await
+    pub async fn get_current_user(&self) -> Result<ApiResponse<User>, Error> {
+        self.client.send_request(Method::GET, "/users/@me", None).await
     }
 
     pub async fn get_invoice_by_id(
         &self,
         invoice_id: &str,
-    ) -> Result<ApiResponse<Invoice>, reqwest::Error> {
-        let url = format!("{}/users/@me/invoices/{}", self.base_url, invoice_id);
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .await?;
-
-        response.json::<ApiResponse<Invoice>>().await
+    ) -> Result<ApiResponse<Invoice>, Error> {
+        self.client.send_request(Method::GET, &format!("/users/@me/invoices/{}", invoice_id), None).await
     }
 
-    pub async fn get_invoices(
-        &self,
-    ) -> Result<ApiResponse<Vec<UserInvoiceSummary>>, reqwest::Error> {
-        let url = format!("{}/users/@me/invoices", self.base_url);
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .await?;
-
-        response
-            .json::<ApiResponse<Vec<UserInvoiceSummary>>>()
-            .await
+    pub async fn get_invoices(&self) -> Result<ApiResponse<Vec<UserInvoiceSummary>>, Error> {
+        self.client.send_request(Method::GET, "/users/@me/invoices", None).await
     }
 
-    pub async fn get_sessions(&self) -> Result<ApiResponse<Vec<Session>>, reqwest::Error> {
-        let url = format!("{}/users/@me/sessions", self.base_url);
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .await?;
-
-        response.json::<ApiResponse<Vec<Session>>>().await
+    pub async fn get_sessions(&self) -> Result<ApiResponse<Vec<Session>>, Error> {
+        self.client.send_request(Method::GET, "/users/@me/sessions", None).await
     }
 }

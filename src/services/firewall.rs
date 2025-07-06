@@ -1,142 +1,144 @@
 use crate::models::{
     firewall::{
-        AttackNotificationSettings,
-        FirewallAttackLog,
-        FirewallCreateRuleData,
-        FirewallReverseDns,
-        FirewallRule,
-        FirewallStatistics,
+        AttackNotificationSettings, FirewallAttackLog, FirewallCreateRuleData, FirewallReverseDns,
+        FirewallRule, FirewallStatistics,
     },
     ApiResponse,
 };
-use reqwest::Client;
-use std::collections::HashMap;
+use crate::NodestyApiClient;
+use reqwest::{Error, Method};
+use std::sync::Arc;
 
 pub struct FirewallApiService {
-    client: Client,
-    base_url: String,
+    client: Arc<NodestyApiClient>,
 }
 
 impl FirewallApiService {
-    pub fn new(client: Client, base_url: String) -> Self {
-        Self {
-            client,
-            base_url,
-        }
+    pub fn new(client: Arc<NodestyApiClient>) -> Self {
+        Self { client }
     }
 
     pub async fn get_attack_logs(
         &self,
         service_id: &str,
         ip: &str,
-    ) -> Result<ApiResponse<Vec<FirewallAttackLog>>, reqwest::Error> {
-        let url = format!(
-            "{}/services/{}/firewall/{}/attack-logs",
-            self.base_url, service_id, ip
-        );
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .await?;
-
-        response.json::<ApiResponse<Vec<FirewallAttackLog>>>().await
+    ) -> Result<ApiResponse<Vec<FirewallAttackLog>>, Error> {
+        self.client
+            .send_request(
+                Method::GET,
+                &format!("/services/{}/firewall/{}/attack-logs", service_id, ip),
+                None,
+            )
+            .await
     }
 
     pub async fn get_attack_notification_settings(
         &self,
         service_id: &str,
         ip: &str,
-    ) -> Result<ApiResponse<AttackNotificationSettings>, reqwest::Error> {
-        let url = format!(
-            "{}/services/{}/firewall/{}/attack-notification",
-            self.base_url, service_id, ip
-        );
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .await?;
-
-        response
-            .json::<ApiResponse<AttackNotificationSettings>>()
+    ) -> Result<ApiResponse<AttackNotificationSettings>, Error> {
+        self.client
+            .send_request(
+                Method::GET,
+                &format!(
+                    "/services/{}/firewall/{}/attack-notification",
+                    service_id, ip
+                ),
+                None,
+            )
             .await
     }
 
-    pub async fn set_attack_notification_settings(
+    pub async fn update_attack_notification_settings(
         &self,
         service_id: &str,
         ip: &str,
         data: AttackNotificationSettings,
-    ) -> Result<ApiResponse<()>, reqwest::Error> {
-        let url = format!(
-            "{}/services/{}/firewall/{}/attack-notification",
-            self.base_url, service_id, ip
-        );
-        let response = self
-            .client
-            .post(&url)
-            .json(&data)
-            .send()
-            .await?;
+    ) -> Result<ApiResponse<AttackNotificationSettings>, Error> {
+        let body = serde_json::to_value(&data).ok();
+        self.client
+            .send_request(
+                Method::PUT,
+                &format!(
+                    "/services/{}/firewall/{}/attack-notification",
+                    service_id, ip
+                ),
+                body,
+            )
+            .await
+    }
 
-        response.json::<ApiResponse<()>>().await
+    pub async fn reset_reverse_dns(
+        &self,
+        service_id: &str,
+        ip: &str,
+    ) -> Result<ApiResponse<()>, Error> {
+        self.client
+            .send_request(
+                Method::DELETE,
+                &format!("/services/{}/firewall/{}/rdns", service_id, ip),
+                None,
+            )
+            .await
     }
 
     pub async fn get_reverse_dns(
         &self,
         service_id: &str,
         ip: &str,
-    ) -> Result<ApiResponse<FirewallReverseDns>, reqwest::Error> {
-        let url = format!(
-            "{}/services/{}/firewall/{}/rdns",
-            self.base_url, service_id, ip
-        );
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .await?;
-
-        response.json::<ApiResponse<FirewallReverseDns>>().await
+    ) -> Result<ApiResponse<FirewallReverseDns>, Error> {
+        self.client
+            .send_request(
+                Method::GET,
+                &format!("/services/{}/firewall/{}/rdns", service_id, ip),
+                None,
+            )
+            .await
     }
 
-    pub async fn set_reverse_dns(
+    pub async fn upsert_reverse_dns(
         &self,
         service_id: &str,
         ip: &str,
         data: FirewallReverseDns,
-    ) -> Result<ApiResponse<()>, reqwest::Error> {
-        let url = format!(
-            "{}/services/{}/firewall/{}/rdns",
-            self.base_url, service_id, ip
-        );
-        let response = self
-            .client
-            .post(&url)
-            .json(&data)
-            .send()
-            .await?;
+    ) -> Result<ApiResponse<()>, Error> {
+        let body = serde_json::to_value(&data).ok();
+        self.client
+            .send_request(
+                Method::PUT,
+                &format!("/services/{}/firewall/{}/rdns", service_id, ip),
+                body,
+            )
+            .await
+    }
 
-        response.json::<ApiResponse<()>>().await
+    pub async fn delete_rule(
+        &self,
+        service_id: &str,
+        ip: &str,
+        rule_id: u32,
+    ) -> Result<ApiResponse<()>, Error> {
+        self.client
+            .send_request(
+                Method::DELETE,
+                &format!("/services/{}/firewall/{}/rules/{}", service_id, ip, rule_id),
+                None,
+            )
+            .await
     }
 
     pub async fn get_rules(
         &self,
         service_id: &str,
         ip: &str,
-    ) -> Result<ApiResponse<Vec<FirewallRule>>, reqwest::Error> {
-        let url = format!(
-            "{}/services/{}/firewall/{}/rules",
-            self.base_url, service_id, ip
-        );
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .await?;
-
-        response.json::<ApiResponse<Vec<FirewallRule>>>().await
+    ) -> Result<ApiResponse<Vec<FirewallRule>>, Error> {
+        self.client
+            .send_request(
+                Method::GET,
+                &format!("/services/{}/firewall/{}/rules", service_id, ip),
+                None,
+            )
+            .await
     }
 
     pub async fn create_rule(
@@ -144,36 +146,28 @@ impl FirewallApiService {
         service_id: &str,
         ip: &str,
         data: FirewallCreateRuleData,
-    ) -> Result<ApiResponse<()>, reqwest::Error> {
-        let url = format!(
-            "{}/services/{}/firewall/{}/rules",
-            self.base_url, service_id, ip
-        );
-        let response = self
-            .client
-            .post(&url)
-            .json(&data)
-            .send()
-            .await?;
-
-        response.json::<ApiResponse<()>>().await
+    ) -> Result<ApiResponse<()>, Error> {
+        let body = serde_json::to_value(&data).ok();
+        self.client
+            .send_request(
+                Method::POST,
+                &format!("/services/{}/firewall/{}/rules", service_id, ip),
+                body,
+            )
+            .await
     }
 
     pub async fn get_statistics(
         &self,
         service_id: &str,
         ip: &str,
-    ) -> Result<ApiResponse<Vec<FirewallStatistics>>, reqwest::Error> {
-        let url = format!(
-            "{}/services/{}/firewall/{}/stats",
-            self.base_url, service_id, ip
-        );
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .await?;
-
-        response.json::<ApiResponse<Vec<FirewallStatistics>>>().await
+    ) -> Result<ApiResponse<Vec<FirewallStatistics>>, Error> {
+        self.client
+            .send_request(
+                Method::GET,
+                &format!("/services/{}/firewall/{}/stats", service_id, ip),
+                None,
+            )
+            .await
     }
 }

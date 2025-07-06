@@ -1,74 +1,96 @@
 # Nodesty Rust API Client
 
-[![API](https://img.shields.io/badge/Nodesty-API-green.svg)](https://nodesty.com)
+[![API](https://img.shields.io/badge/nodesty-api-library-purple.svg)](https://nodesty.com)  
 [![Author](https://img.shields.io/badge/Author-Staticius-blue.svg)](https://github.com/staticius)
 
-nodesty.com'un güçlü API'sine Rust uygulamalarınızdan kolayca erişmenizi sağlayan modern, asenkron ve tip güvenli bir istemci kütüphanesi.
+**nodesty.com**'un güçlü API'sine Rust uygulamalarınızdan kolayca erişmenizi sağlayan modern, asenkron ve tip güvenli bir istemci kütüphanesi.
+
+---
 
 ## 🚀 Özellikler
 
-- **⚡ Asenkron Operasyonlar**: `tokio` + `reqwest` ile tam async destek
-- **🔒 Tip Güvenliği**: Güçlü enum/struct yapılarıyla modelleme
-- **🔄 Otomatik Serileştirme**: JSON ↔ Rust veri tipleri dönüşümü `serde` ile
-- **⚙️ Yapılandırılabilir**: Timeout, retry, rate limit ayarları
-- **🛡️ Kapsamlı Hata Yönetimi**: Standart `ApiResponse<T>` yapısı
-- **📦 Modüler Yapı**: Her servis kendi modülü içinde
+- ⚡ **Asenkron Operasyonlar**: Tam async destek!
+- 🔒 **Tip Güvenliği**: Güçlü enum/struct yapılarıyla modelleme
+- 🔄 **Otomatik Serileştirme**: JSON ↔ Rust veri tipleri dönüşümü `serde` ile
+- ⚙️ **Yapılandırılabilir**: Timeout, retry, rate limit ayarları
+- 🛡️ **Kapsamlı Hata Yönetimi**: Standart `ApiResponse<T>` yapısı
+- 📦 **Modüler Yapı**: Her servis kendi modülü içinde
+
+---
 
 ## 📋 Desteklenen Servisler
 
-| Servis | Açıklama | Erişim |
-|-----------------------|-----------------------------------------------------------|---------------------------|
-| **User Service** | Kullanıcı profili, hizmetler, faturalar, destek biletleri | `client.user` |
-| **VPS Service** | VPS yönetimi, yedekler, şifre değişimi, istatistikler | `client.vps` |
-| **Dedicated Service** | Dedicated sunucu yönetimi, donanım bilgileri | `client.dedicated_server` |
-| **Firewall Service** | nShield kuralları, saldırı logları, rDNS yönetimi | `client.firewall` |
+| Servis                | Açıklama                                                  | Erişim                      |
+|-----------------------|-----------------------------------------------------------|-----------------------------|
+| **User Service**      | Kullanıcı profili, hizmetler, faturalar, destek biletleri | `UserApiService`           |
+| **VPS Service**       | VPS yönetimi, yedekler, şifre değişimi, istatistikler     | `VpsApiService`            |
+| **Dedicated Service** | Dedicated sunucu yönetimi, donanım bilgileri              | `DedicatedServerApiService`|
+| **Firewall Service**  | nShield kuralları, saldırı logları, rDNS yönetimi         | `FirewallApiService`       |
+
+---
 
 ## 🛠️ Kurulum
 
-https://crates.io/crates/nodesty-api-library
+Terminalinizde aşağıdaki komutu çalıştırın:
+
+```shell
+cargo add nodesty-api-library
+```
+
+---
 
 ## 🔑 Başlangıç
 
 ### API Token Alma
 
-1. [Nodesty kontrol paneli](https://nodesty.com/dashboard/my-account/access-tokens) adresine giriş yapın.
+Nodesty dashboarddan bir erişim belirteci oluşturun.
 
 ### Temel Kullanım
 
 ```rust
-use nodesty_client::{NodestyApiClient, RestClientOptions};
+use nodesty_api_library::{
+    models::RestClientOptions,
+    NodestyApiClient,
+    services::{UserApiService, VpsApiService}
+};
+use std::sync::Arc;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let token = std::env::var("NODESTY_API_TOKEN").expect("Token yok");
     let options = RestClientOptions::new(token)
-        .with_timeout_ms(45_000) // MS cinsinden süre (45 saniye)
+        .with_timeout_ms(45_000)
         .with_retry(5)
-        .with_rate_limit_offset_ms(100); // MS cinsinden offset
+        .with_rate_limit_offset_ms(100);
 
-    let client = NodestyApiClient::new(options)?; // Hata işleme için '?' kullanıldı
+    let client = Arc::new(NodestyApiClient::new(options)?);
+    let user_service = UserApiService::new(client.clone());
+    let vps_service = VpsApiService::new(client);
 
-    let user_response = client.user.get_current_user().await?;
+    let user_response = user_service.get_current_user().await?;
     if user_response.success {
         if let Some(user) = user_response.data {
-            println!("Hos geldin {}", user.name);
+            println!("Hoş geldin {}", user.full_name);
         } else {
             println!("Kullanıcı bilgisi bulunamadı.");
         }
     } else {
         println!("Kullanıcı bilgisi getirilirken hata oluştu: {:?}", user_response.error);
     }
-    
+
     Ok(())
 }
 ```
+
+---
 
 ## 📖 Kullanım Örnekleri
 
 ### 👤 Kullanıcı Bilgileri
 
 ```rust
-let res = client.user.get_current_user().await?;
+let user_service = UserApiService::new(client.clone());
+let res = user_service.get_current_user().await?;
 if res.success {
     let user = res.data.unwrap();
     println!("Merhaba {}", user.full_name);
@@ -81,12 +103,13 @@ if res.success {
 ### 🖥️ VPS Yönetimi
 
 ```rust
+let vps_service = VpsApiService::new(client.clone());
 let vps_id = "your-vps-id";
 
-use nodesty_client::models::VpsAction;
-client.vps.perform_action(vps_id, VpsAction::Restart).await?;
+use nodesty_api_library::models::vps::VpsAction;
+vps_service.perform_action(vps_id, VpsAction::Restart).await?;
 
-let backups = client.vps.get_backups(vps_id).await?.data.unwrap();
+let backups = vps_service.get_backups(vps_id).await?.data.unwrap();
 for backup in backups {
     println!("Yedek: {} - {}", backup.date, backup.file);
 }
@@ -95,8 +118,9 @@ for backup in backups {
 ### 🔧 Dedicated Sunucu
 
 ```rust
+let dedicated_service = DedicatedServerApiService::new(client.clone());
 let id = "your-dedicated-id";
-let res = client.dedicated_server.get_hardware_components(id).await?;
+let res = dedicated_service.get_hardware_components(id).await?;
 for part in res.data.unwrap() {
     println!("{}: {} {}{}", part.component, part.model, part.value, part.value_suffix);
 }
@@ -105,16 +129,19 @@ for part in res.data.unwrap() {
 ### 🛡️ Güvenlik Duvarı
 
 ```rust
-use nodesty_client::models::FirewallCreateRuleData;
+let firewall_service = FirewallApiService::new(client.clone());
+use nodesty_api_library::models::firewall::FirewallCreateRuleData;
 
-let rule = FirewallCreateRuleData { port: 25565, appId: 123 };
-client.firewall.create_rule("svc-id", "ip", rule).await?;
+let rule = FirewallCreateRuleData { port: 25565, app_id: 123 };
+firewall_service.create_rule("svc-id", "ip", rule).await?;
 
-let logs = client.firewall.get_attack_logs("svc-id", "ip").await?.data.unwrap();
+let logs = firewall_service.get_attack_logs("svc-id", "ip").await?.data.unwrap();
 for log in logs {
     println!("Saldırı Başlangıcı: {} - Vektörler: {:?}", log.started_at, log.vectors);
 }
 ```
+
+---
 
 ## 🏗️ API Yanıt Yapısı
 
@@ -128,69 +155,75 @@ pub struct ApiResponse<T> {
 }
 ```
 
+---
+
 ## ⚙️ Yapılandırma Seçenekleri
 
 ```rust
 let options = RestClientOptions::new(token)
-    .with_timeout_ms(30_000) // MS cinsinden süre (30 saniye)
+    .with_timeout_ms(30_000)
     .with_retry(3)
-    .with_rate_limit_offset_ms(50); // MS cinsinden offset
+    .with_rate_limit_offset_ms(50);
 ```
+
+---
 
 ## 📚 API Servisleri
 
-### 👤 User Service (`client.user`)
+### 👤 User Service (`UserApiService`)
 
-| Metod | Açıklama | Endpoint |
-|----------------------|----------------------------|--------------------------------|
-| `get_current_user()` | Kullanıcı profilini al | `GET /users/@me` |
-| `get_services()` | Hizmetleri listele | `GET /services` |
-| `get_tickets()` | Destek biletlerini listele | `GET /tickets` |
-| `get_ticket(id)` | Belirli bileti getir | `GET /tickets/{id}` |
-| `get_invoices()` | Faturaları listele | `GET /users/@me/invoices` |
-| `get_invoice(id)` | Belirli faturayı getir | `GET /users/@me/invoices/{id}` |
-| `get_sessions()` | Aktif oturumları getir | `GET /users/@me/sessions` |
+| Metod                 | Açıklama                          | Endpoint                           |
+|-----------------------|-----------------------------------|-------------------------------------|
+| `get_current_user()`  | Kullanıcı profilini al            | `GET /users/@me`                    |
+| `get_services()`      | Hizmetleri listele                | `GET /services`                     |
+| `get_tickets()`       | Destek biletlerini listele        | `GET /tickets`                      |
+| `get_ticket(id)`      | Belirli bileti getir              | `GET /tickets/{id}`                 |
+| `get_invoices()`      | Faturaları listele                | `GET /users/@me/invoices`           |
+| `get_invoice(id)`     | Belirli faturayı getir            | `GET /users/@me/invoices/{id}`      |
+| `get_sessions()`      | Aktif oturumları getir            | `GET /users/@me/sessions`           |
 
-### 🖥️ VPS Service (`client.vps`)
+### 🖥️ VPS Service (`VpsApiService`)
 
-| Metod | Açıklama | Endpoint |
-|----------------------------------|-------------------------|-------------------------------------------------|
-| `perform_action(id, action)` | VPS eylemi gerçekleştir | `POST /services/{id}/vps/action` |
-| `get_backups(id)` | Yedekleri getir | `GET /services/{id}/vps/backups` |
-| `restore_backup(id, date, file)` | Geri yükleme yap | `POST /services/{id}/vps/backups/{date}/{file}` |
-| `change_password(id, data)` | Şifre değiştir | `POST /services/{id}/vps/change-password` |
-| `get_graphs(id)` | İstatistikleri al | `GET /services/{id}/vps/graphs` |
-| `get_details(id)` | VPS detayları | `GET /services/{id}/vps/info` |
-| `get_os_templates(id)` | OS şablonlarını getir | `GET /services/{id}/vps/os-templates` |
-| `reinstall(id, data)` | Yeniden kurulum | `POST /services/{id}/vps/reinstall` |
-| `get_tasks(id)` | Görevleri getir | `GET /services/{id}/vps/tasks` |
+| Metod                 | Açıklama                          | Endpoint                             |
+|-----------------------|-----------------------------------|---------------------------------------|
+| `perform_action()`    | VPS eylemi gerçekleştir           | `POST /services/{id}/vps/action`     |
+| `get_backups()`       | Yedekleri getir                   | `GET /services/{id}/vps/backups`     |
+| `restore_backup()`    | Geri yükleme yap                  | `POST /services/{id}/vps/backups/...`|
+| `change_password()`   | Şifre değiştir                    | `POST /services/{id}/vps/change-password` |
+| `get_usage_statistics()` | İstatistikleri al              | `GET /services/{id}/vps/graphs`      |
+| `get_details()`       | VPS detayları                     | `GET /services/{id}/vps/info`        |
+| `get_os_templates()`  | OS şablonlarını getir             | `GET /services/{id}/vps/os-templates`|
+| `reinstall()`         | Yeniden kurulum                   | `POST /services/{id}/vps/reinstall`  |
+| `get_tasks()`         | Görevleri getir                   | `GET /services/{id}/vps/tasks`       |
 
-### 🔧 Dedicated Service (`client.dedicated_server`)
+### 🔧 Dedicated Service (`DedicatedServerApiService`)
 
-| Metod | Açıklama | Endpoint |
-|-------------------------------|-------------------|-------------------------------------------------|
-| `perform_action(id, action)` | Eylem çalıştır | `POST /services/{id}/dedicated/action` |
-| `get_hardware_components(id)` | Donanım detayları | `GET /services/{id}/dedicated/hardware` |
-| `get_details(id)` | Sunucu bilgisi | `GET /services/{id}/dedicated/info` |
-| `get_os_templates(id)` | OS şablonları | `GET /services/{id}/dedicated/os-templates` |
-| `get_reinstall_status(id)` | Kurulum durumu | `GET /services/{id}/dedicated/reinstall-status` |
-| `reinstall(id, data)` | Yeniden kur | `POST /services/{id}/dedicated/reinstall` |
-| `get_tasks(id)` | Görevleri getir | `GET /services/{id}/dedicated/tasks` |
+| Metod                 | Açıklama                          | Endpoint                             |
+|-----------------------|-----------------------------------|---------------------------------------|
+| `perform_action()`    | Eylem çalıştır                    | `POST /services/{id}/dedicated/action`|
+| `get_details()`       | Sunucu bilgisi                    | `GET /services/{id}/dedicated/info`   |
+| `get_hardware_components()` | Donanım detayları          | `GET /services/{id}/dedicated/hardware`|
+| `get_os_templates()`  | OS şablonları                     | `GET /services/{id}/dedicated/os-templates`|
+| `get_reinstall_status()` | Kurulum durumu                 | `GET /services/{id}/dedicated/reinstall-status`|
+| `reinstall()`         | Yeniden kur                       | `POST /services/{id}/dedicated/reinstall`|
+| `get_tasks()`         | Görevleri getir                   | `GET /services/{id}/dedicated/tasks`  |
 
-### 🛡️ Firewall Service (`client.firewall`)
+### 🛡️ Firewall Service (`FirewallApiService`)
 
-| Metod | Açıklama | Endpoint |
-|-----------------------------------------------------|------------------------------|--------------------------------------------------------|
-| `get_attack_logs(id, ip)` | Saldırı kayıtlarını getir | `GET /services/{id}/firewall/{ip}/attack-logs` |
-| `get_attack_notification_settings(id, ip)` | Bildirim ayarları | `GET /services/{id}/firewall/{ip}/attack-notification` |
-| `update_attack_notification_settings(id, ip, data)` | Bildirim ayarlarını güncelle | `PUT /services/{id}/firewall/{ip}/attack-notification` |
-| `delete_reverse_dns(id, ip)` | rDNS kaldır | `DELETE /services/{id}/firewall/{ip}/rdns` |
-| `get_reverse_dns(id, ip)` | rDNS bilgisi | `GET /services/{id}/firewall/{ip}/rdns` |
-| `upsert_reverse_dns(id, ip, rdns)` | rDNS ayarla | `PUT /services/{id}/firewall/{ip}/rdns` |
-| `delete_rule(id, ip, rule_id)` | Kural sil | `DELETE /services/{id}/firewall/{ip}/rules/{rule_id}` |
-| `get_rules(id, ip)` | Kuralları getir | `GET /services/{id}/firewall/{ip}/rules` |
-| `create_rule(id, ip, data)` | Kural oluştur | `POST /services/{id}/firewall/{ip}/rules` |
-| `get_statistics(id, ip)` | İstatistikleri getir | `GET /services/{id}/firewall/{ip}/stats` |
+| Metod                             | Açıklama                          | Endpoint                                  |
+|-----------------------------------|-----------------------------------|--------------------------------------------|
+| `get_attack_logs()`               | Saldırı kayıtlarını getir         | `GET /services/{id}/firewall/{ip}/attack-logs` |
+| `get_attack_notification_settings()` | Bildirim ayarları              | `GET /services/{id}/firewall/{ip}/attack-notification` |
+| `update_attack_notification_settings()` | Bildirim ayarlarını güncelle | `PUT /services/{id}/firewall/{ip}/attack-notification` |
+| `reset_reverse_dns()`             | rDNS kaldır                       | `DELETE /services/{id}/firewall/{ip}/rdns` |
+| `get_reverse_dns()`               | rDNS bilgisi                      | `GET /services/{id}/firewall/{ip}/rdns` |
+| `upsert_reverse_dns()`            | rDNS ayarla                       | `PUT /services/{id}/firewall/{ip}/rdns` |
+| `delete_rule()`                   | Kural sil                         | `DELETE /services/{id}/firewall/{ip}/rules/{rule_id}` |
+| `get_rules()`                     | Kuralları getir                   | `GET /services/{id}/firewall/{ip}/rules` |
+| `create_rule()`                   | Kural oluştur                     | `POST /services/{id}/firewall/{ip}/rules` |
+| `get_statistics()`                | İstatistikleri getir              | `GET /services/{id}/firewall/{ip}/stats` |
+
+---
 
 ## 🔐 Güvenlik İpuçları
 
@@ -198,11 +231,15 @@ let options = RestClientOptions::new(token)
 - Her `ApiResponse` sonrası `.success` kontrolü yapın
 - Hataları `match` veya `if let` ile detaylı yönetin
 
+---
+
 ## 🚀 Performans Önerileri
 
 - `tokio::join!` ile işlemleri paralel çalıştırın
-- Gecikmeleri azaltmak için rate limit ayarlarını yapılandırın
-- Uygulama başında istemciyi bir kere oluşturun ve tekrar kullanın
+- Rate limit için `rate_limit_offset_ms` yapılandırmasını ayarlayın
+- Uygulama başında istemciyi bir kez oluşturun ve tekrar kullanın
+
+---
 
 ## 🧪 Test Örneği
 
@@ -210,9 +247,10 @@ let options = RestClientOptions::new(token)
 #[tokio::test]
 async fn test_user_service() -> Result<(), Box<dyn std::error::Error>> {
     let token = std::env::var("NODESTY_TEST_TOKEN").unwrap();
-    let client = NodestyApiClient::new(RestClientOptions::new(token))?;
+    let client = Arc::new(NodestyApiClient::new(RestClientOptions::new(token))?);
+    let user_service = UserApiService::new(client);
 
-    let response = client.user.get_current_user().await?;
+    let response = user_service.get_current_user().await?;
     assert!(response.success);
     assert!(response.data.unwrap().email.contains("@"));
 
@@ -220,40 +258,34 @@ async fn test_user_service() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
+---
+
 ## 🐛 Sorun Giderme
 
-**401 Unauthorized**
-- Token geçersiz veya süresi dolmuş olabilir
+- **401 Unauthorized**: Token geçersiz veya süresi dolmuş olabilir
+- **Timeout**: Ağ bağlantısını ve timeout süresini kontrol edin
+- **Rate Limiting**: `rate_limit_offset_ms` değerini artırın veya daha az istek gönderin
 
-**Timeout**
-- Ağ bağlantısını ve timeout süresini kontrol edin
-
-**Rate Limiting**
-- `rate_limit_offset_ms` değerini artırın veya daha az sıklıkla istek atın
-
-## 📝 Changelog
-
-### v1.0.3
-- Header sorunları düzeltildi
-- Tüm Nodesty API endpoint'leri destekleniyor
-- Asenkron operasyonlar ve tip güvenliği
+---
 
 ## 🤝 Katkıda Bulunma
 
 1. Repo'yu forklayın
-2. Branch oluşturun (`git checkout -b feature/harika-ozellik`)
+2. Yeni bir branch oluşturun (`git checkout -b feature/harika-ozellik`)
 3. Commit ve push yapın
 4. PR gönderin
 
+---
+
 ## 🔗 Bağlantılar
 
-- [Nodesty Website](https://nodesty.com)
-- [API Dökümantasyonu](https://nodesty.com/docs)
+- 🌐 [Nodesty Website](https://nodesty.com)
+- 📘 [API Dökümantasyonu](https://nodesty.com/api)
+
+---
 
 ## ⭐ Destek
 
 Bu proje faydalı olduysa ⭐ vererek destekleyebilirsiniz!
-
----
 
 **Made with ❤️ for Nodesty Community.**
