@@ -1,11 +1,11 @@
-use crate::models::{
-    firewall::{
-        AttackNotificationSettings, FirewallAttackLog, FirewallCreateRuleData, FirewallReverseDns,
-        FirewallRule, FirewallStatistics,
-    },
-    ApiResponse,
-};
 use crate::NodestyApiClient;
+use crate::models::{
+    ApiResponse,
+    firewall::{
+        AttackNotificationSettings, FirewallAttackLog, FirewallReverseDns, FirewallRule,
+        FirewallStatistics,
+    },
+};
 use reqwest::{Error, Method};
 use std::sync::Arc;
 
@@ -26,7 +26,7 @@ impl FirewallApiService {
         self.client
             .send_request(
                 Method::GET,
-                &format!("/services/{}/firewall/{}/attack-logs", service_id, ip),
+                &format!("/services/{service_id}/firewall/{ip}/attack-logs"),
                 None,
             )
             .await
@@ -40,10 +40,7 @@ impl FirewallApiService {
         self.client
             .send_request(
                 Method::GET,
-                &format!(
-                    "/services/{}/firewall/{}/attack-notification",
-                    service_id, ip
-                ),
+                &format!("/services/{service_id}/firewall/{ip}/attack-notification"),
                 None,
             )
             .await
@@ -59,10 +56,7 @@ impl FirewallApiService {
         self.client
             .send_request(
                 Method::PUT,
-                &format!(
-                    "/services/{}/firewall/{}/attack-notification",
-                    service_id, ip
-                ),
+                &format!("/services/{service_id}/firewall/{ip}/attack-notification"),
                 body,
             )
             .await
@@ -76,7 +70,7 @@ impl FirewallApiService {
         self.client
             .send_request(
                 Method::DELETE,
-                &format!("/services/{}/firewall/{}/rdns", service_id, ip),
+                &format!("/services/{service_id}/firewall/{ip}/rdns"),
                 None,
             )
             .await
@@ -90,7 +84,7 @@ impl FirewallApiService {
         self.client
             .send_request(
                 Method::GET,
-                &format!("/services/{}/firewall/{}/rdns", service_id, ip),
+                &format!("/services/{service_id}/firewall/{ip}/rdns"),
                 None,
             )
             .await
@@ -106,7 +100,7 @@ impl FirewallApiService {
         self.client
             .send_request(
                 Method::PUT,
-                &format!("/services/{}/firewall/{}/rdns", service_id, ip),
+                &format!("/services/{service_id}/firewall/{ip}/rdns"),
                 body,
             )
             .await
@@ -116,12 +110,12 @@ impl FirewallApiService {
         &self,
         service_id: &str,
         ip: &str,
-        rule_id: u32,
+        rule_id: &str,
     ) -> Result<ApiResponse<()>, Error> {
         self.client
             .send_request(
                 Method::DELETE,
-                &format!("/services/{}/firewall/{}/rules/{}", service_id, ip, rule_id),
+                &format!("/services/{service_id}/firewall/{ip}/rules/{rule_id}"),
                 None,
             )
             .await
@@ -135,24 +129,8 @@ impl FirewallApiService {
         self.client
             .send_request(
                 Method::GET,
-                &format!("/services/{}/firewall/{}/rules", service_id, ip),
+                &format!("/services/{service_id}/firewall/{ip}/rules"),
                 None,
-            )
-            .await
-    }
-
-    pub async fn create_rule(
-        &self,
-        service_id: &str,
-        ip: &str,
-        data: FirewallCreateRuleData,
-    ) -> Result<ApiResponse<()>, Error> {
-        let body = serde_json::to_value(&data).ok();
-        self.client
-            .send_request(
-                Method::POST,
-                &format!("/services/{}/firewall/{}/rules", service_id, ip),
-                body,
             )
             .await
     }
@@ -165,7 +143,7 @@ impl FirewallApiService {
         self.client
             .send_request(
                 Method::GET,
-                &format!("/services/{}/firewall/{}/stats", service_id, ip),
+                &format!("/services/{service_id}/firewall/{ip}/stats"),
                 None,
             )
             .await
